@@ -23,12 +23,12 @@ footer-links:
   flickr:
   github: TirendazAcademy
   instagram:
-  linkedin:
+  linkedin: https://www.linkedin.com/in/tirendaz-academy/
   pinterest:
   rss: # just type anything here for a working RSS icon
   twitter: TirendazAcademy
   stackoverflow: # your stackoverflow profile, e.g. "users/50476/bart-kiers"
-  youtube: user/<tiredazacademy>
+  youtube: # channel/<your_long_string> or user/<user-name>
   googleplus: # anything in your profile username that comes after plus.google.com/
 
 
