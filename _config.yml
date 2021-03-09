@@ -18,7 +18,7 @@ avatar: https://raw.githubusercontent.com/TirendazAcademy/tirendazacademy.github
 # Includes an icon in the footer for each username you enter
 footer-links:
   dribbble:
-  email: tirendazcontact@gmail.com
+  email: tirendazacademy@gmail.com
   facebook:
   flickr:
   github: TirendazAcademy
@@ -28,7 +28,7 @@ footer-links:
   rss: # just type anything here for a working RSS icon
   twitter: TirendazAcademy
   stackoverflow: # your stackoverflow profile, e.g. "users/50476/bart-kiers"
-  youtube: # channel/<your_long_string> or user/<user-name>
+  youtube: # user/tirendazakademi
   googleplus: # anything in your profile username that comes after plus.google.com/
 
 
