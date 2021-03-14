@@ -1,114 +1,207 @@
 ---
 layout: post
-title: Practical Data Analysis with Pandas
+author: Nikolay Kostadinov
+title: Solving CartPole-v0 with xgboost
+categories: [python, machine learning, reinforcement learning, xgboost, cart pole, open gym, openai, artificial intelligence]
 ---
 
+An artificial intelligence agent starting to learn by from its own mistakes until it is fit to handle a certain task like an expert? To many this does sound like a science like science fiction, but it is based on a simple principle called Reinforcement Learning. 
 
-![_config.yml]({{ tirendazacademy }}/images/config.png)
+# The Cart Pole Problem
 
-The easiest way to make your first post is to edit this one. Go into /_posts/ and update the Hello World markdown file. For more instructions head over to the [Jekyll Now repository](https://github.com/barryclark/jekyll-now) on GitHub.
+Recently, I found the <a href="https://gym.openai.com/" target="_blank">OpenAI Gym</a> and started playing with some of the environments. It certainly is a nice way of getting your head off kaggle.com for a while. This is a start of a series of posts describing solutions to some of the problems posted there. 
+
+As suggested on the <a href="https://gym.openai.com/docs" target="_blank">Getting stared page</a> I got my hands on one of the easier problems, called <a href="https://gym.openai.com/envs/CartPole-v0" target="_blank">CartPole-v0</a>. Basically, you have to balance a pole on a cart. Each time frame you have to choose between one of two "actions" `[1;-1]` and thereby move the pole either left or right. Note, the actual action set `[0;1]`.
+
+## Cache
+
+The first problem you have to solve is figuring out how to structure the data. Obviously, your input data should contain the four observations. Interestingly enough, since we are solving this problem by applying supervised learning, the semantics of this data is not important (black box approach). The tricky part is what comes next. You add the action `[0;1]` taken based on these observations as a fifth input variable. Deciding on how to represent the output variable is probably even trickier. As an output variable you take the count of time frames it takes for the episode to finish - either the pole falls on its side or you reach the maximum of 200 time frames. Ok, let's start by defining a simple class called `Cache`:
 
 
-In my last post, I mentioned working with data in Pandas library. One of Python’s most important libraries is pandas. With Pandas, you can clean the data and make it suitable for analysis and make artificial intelligence analysis such as modeling or machine learning. In this lesson, I will show you how to preprocess data to make it suitable for analysis and analyze it in a practical way.
+{% highlight python %}
+class Cache:
+    
+    def __init__(self):
+        self.cache = []
+        self.index = 0
+   
+    def cache_data(self, observation, action, time_frame):
+        cache_data = np.append(observation,[action,time_frame])
+        indexed_cache_data = np.append(self.index, cache_data)
+        self.cache.append(indexed_cache_data)
+        self.index += 1
+    
+    def get_frame(self):
+        df_cache = pd.DataFrame(columns=FRAME_COLUMNS, data=self.cache)
+        
+        # Normalize reward
+        future_reward = df_cache['future_reward'].values
+        max_future_reward = np.max(future_reward)
+        df_cache['future_reward'] = max_future_reward - future_reward
+        
+        return df_cache
+{% endhighlight %}
 
-Before starting the topic, our Medium page includes posts on data science, artificial intelligence, machine learning, and deep learning. Please don’t forget to follow us on Medium 🌱 to see these posts and the latest posts.
-Let’s get started.
-First of all, let’s import the panda with the pd abbreviation.
+## Memory
 
-Let’s import the data set.
+As the episode starts, for each time frame `cache_data` is called to store the observation, the action taken and the time frame index. At the end of the episode the `get_frame` creates a data frame - the valuable peace of data that is later to be learned by a model. Notice the transformation of the output variable (here called `future_reward`) into the count of time frames it takes for the episode to finish. Next, we create a class `Memory`:
 
-If you want, you can download this data set from here. Let’s take a look first rows of this data set.
+{% highlight python %}
+class Memory:
+    
+    def __init__(self):
+        self.df_data = pd.DataFrame(columns=FRAME_COLUMNS)
+    
+    def add_cache(self, cache):
+        self.df_data = pd.concat([self.df_data, cache.get_frame()])
+{% endhighlight %}
 
-The data set is about the vehicles stopped by the police in San Diago, California, on the road. This data set includes data such as the time to stop the vehicle, the age of the driver, the reason for the stop, and the status of the arrest.
-Let’s print the last three rows on the screen.
+## Brain
 
-Let’s want to see the structure of the data set.
+The `Memory` class holds all the data that our "AI agent" is going to use when learning. After each episode the "cache" or the short-term memory is added to the "memory" or the long-term memory. The last piece of the puzzle is adding the brain:
 
-Let’s see the data type of the columns in the data set.
+{% highlight python %}
+class Brain:
+    
+    def __init__(self, memory):
+        self.regressor = None
+        self.memory = memory
+        
+    def train(self):
+        
+        msk = np.random.rand(len(self.memory.df_data)) < 0.90 # 10% of data is used for early stopping
+        train, validation = self.memory.df_data[msk], self.memory.df_data[~msk]
+        
+        train_xgdmat =  xgb.DMatrix(train[FEATURES], label=train['future_reward'])
+        validation_xgdmat =  xgb.DMatrix(validation[FEATURES], label=validation['future_reward'])
+        watchlist = [(validation_xgdmat, 'test')]
+        self.regressor = xgb.train(XGB_PARAMS, train_xgdmat, MAX_ITERATIONS, watchlist, verbose_eval=False)
+        
+    def is_exploration(self, episode):
+        return episode < 5 or (episode < 15 and episode % 2 == 0)
+        
+    def decide_action(self, observations, episode):
+        if self.is_exploration(episode):
+            return random.randint(0, 1)
+        else:
+            x_0 = np.append(observations, [0]).reshape(1,5)
+            x_1 = np.append(observations, [1]).reshape(1,5)
+            future_reward_0 = self.regressor.predict(xgb.DMatrix(x_0, feature_names=FEATURES))[0]
+            future_reward_1 = self.regressor.predict(xgb.DMatrix(x_1, feature_names=FEATURES))[0]
+            return 0 if future_reward_0 > future_reward_1 else 1
+{% endhighlight %}
 
-The isnull() method is used to see the missing data in the data set. This command returns boolean, or logical value. False indicates that there is no missing data, and True indicates that there is missing data. Let’s see the total number of missing data in each row.
+## Putting it all together
 
-There are three important data structures in pandas. This tabular data set is in a DataFrame data structure. Each column of the DataFrame is in the Series data structure. Index objects are other data structures. Let’s want to reach a column in the DataFrame.
+After each episode the 'train' function is called - a model is fitted to the data collected so far. I won't get into details, as there is plenty of material online on xgboost or other learning also. However, it took me quite a lot of time in order to fine tune xgboost to perform well, probably a little more than a couple of hours. Next, to learning, the brain also has to decide for an action based on observation. For the first few episodes, the brain should behave randomly. Afterward, it gradually switches to fully conscious decisions by using the regression model. Basically, the regressions model tries to predict which one of the two actions will lead to a higher count of time frames before the episode ends. The whole code is posted below, feel free to reproduce it. This <a href="https://gym.openai.com/evaluations/eval_XxwHyBGS22PX3ha0bLJ9A" target="_blank">solution</a> did quite well and solved the environment after 15 episodes and only 9 seconds. You can see the behavior of the cart pole on the video below:
 
-Let’s see the column indexes.
+<iframe width="600" height="400" src="https://openai-kubernetes-prod-scoreboard.s3.amazonaws.com/v1/evaluations/eval_XxwHyBGS22PX3ha0bLJ9A/training_episode_batch_video.mp4" frameborder="0"></iframe>
+---
+And here is the complete source code for the cart pole solution:
 
-We can choose the columns we want in the data set. For example, let’s choose the column date.
+{% highlight python %}
+import gym
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+import random
 
-Two square brackets are used to select more than one column.
+FEATURES = ['observation_1','observation_2', 'observation_3', 'observation_4', 'action']
+FRAME_COLUMNS = ['index'] + FEATURES + ['future_reward']
+XGB_PARAMS = {
+              'eta': 0.05,
+              'max_depth': 5,
+              'silent': 1,
+              'gamma':5,
+              'lambda': 10
+            }
+MAX_ITERATIONS = 2000
+MAX_TIME_FRAMES = 500
+MAX_EPISODES = 200
+FINAL_FRAME = 200
 
-We can change the names of the columns. The rename method is used for this. The inplace = True option modifies the data set.
 
-We can select the row or column we want with loc or iloc. Selection is made by entering the row and column names in the loc command. In the iloc command, it is done by entering row and column indexes. The first parameter row of these commands refers to the second parameter column. For example, let’s choose the first row.
+class Cache:
+    
+    def __init__(self):
+        self.cache = []
+        self.index = 0
+   
+    def cache_data(self, observation, action, time_frame):
+        cache_data = np.append(observation,[action,time_frame])
+        indexed_cache_data = np.append(self.index, cache_data)
+        self.cache.append(indexed_cache_data)
+        self.index += 1
+    
+    def get_frame(self):
+        df_cache = pd.DataFrame(columns=FRAME_COLUMNS, data=self.cache)
+        
+        # Normalize reward
+        future_reward = df_cache['future_reward'].values
+        max_future_reward = np.max(future_reward)
+        df_cache['future_reward'] = max_future_reward - future_reward
+        
+        return df_cache
+    
+    
+class Memory:
+    
+    def __init__(self):
+        self.df_data = pd.DataFrame(columns=FRAME_COLUMNS)
+    
+    def add_cache(self, cache):
+        self.df_data = pd.concat([self.df_data, cache.get_frame()])
+        
 
-Let’s select the value of the first row first column.
+class Brain:
+    
+    def __init__(self, memory):
+        self.regressor = None
+        self.memory = memory
+        
+    def train(self):
+        
+        msk = np.random.rand(len(self.memory.df_data)) < 0.90 # 10% of data is used for early stopping
+        train, validation = self.memory.df_data[msk], self.memory.df_data[~msk]
+        
+        train_xgdmat =  xgb.DMatrix(train[FEATURES], label=train['future_reward'])
+        validation_xgdmat =  xgb.DMatrix(validation[FEATURES], label=validation['future_reward'])
+        watchlist = [(validation_xgdmat, 'test')]
+        self.regressor = xgb.train(XGB_PARAMS, train_xgdmat, MAX_ITERATIONS, watchlist, verbose_eval=False)
+        
+    def is_exploration(self, episode):
+        return episode < 5 or (episode < 15 and episode % 2 == 0)
+        
+    def decide_action(self, observations, episode):
+        if self.is_exploration(episode):
+            return random.randint(0, 1)
+        else:
+            x_0 = np.append(observations, [0]).reshape(1,5)
+            x_1 = np.append(observations, [1]).reshape(1,5)
+            future_reward_0 = self.regressor.predict(xgb.DMatrix(x_0, feature_names=FEATURES))[0]
+            future_reward_1 = self.regressor.predict(xgb.DMatrix(x_1, feature_names=FEATURES))[0]
+            return 0 if future_reward_0 > future_reward_1 else 1
 
-We can choose more than one column.
+env = gym.make('CartPole-v0')
 
-We may want to slice the rows.
+memory = Memory()
+brain=Brain(memory)
 
-We can slice both rows and columns.
-
-We enter the name in loc. Since the row indexes are rows here, we can enter numbers directly. Let’s enter the name for the column.
-
-Let’s want to slice the columns.
-
-The dropna() method is used to delete all columns with missing data. First, let’s see the structure of the data set again.
-
-Let’s delete the values whose rows are missing data.
-
-how = “any” option means to delete any missing data.
-
-A Simple Analysis
-Let’s examine whether men or women were stopped for more violations. Now let’s look at the reasons and numbers of stopped vehicles. Let’s take a reason for the stop column for this.
-
-Thus, the reasons for stopping the vehicles were written on the screen. Vehicles were stopped due to the most speed violations. Let’s see the numbers of men and women stopped for speeding. For this, we filter according to the moving violation value. Then we select the subject_sex column and use the value_counts function to find the total number.
-
-So we filtered according to the Moving Violation variable, then we chose the gender column. If we want to see the percentage of men and women by gender, the option normalized = True is used.
-
-Let’s just want to see the reasons for stopping women as a percentage. First, we filter the gender column by men.
-
-77 percent of the women were stopped due to speed violations. If we want to see the reasons for stopping men and women together, we must first divide the data set into groups according to gender. The groupby() method is used to group the data set by gender.
-
-Let’s see the data in a tabular form.
-
-Now let’s look at the effect of gender on the situation in arrest. Let’s find the number of arrests first.
-
-Let’s see the percentage of the number of arrests.
-
-Let’s see the percentage of arrests by gender.
-
-Men were arrested twice as many as women. Let’s see the percentages of arrests by race and gender.
-
-If you notice, black men and women were arrested more than others. Let’s investigate which year the number of stops was less. First, let’s find the first 4 years value of the date column and find the numbers of the years in the data set.
-
-Let’s combine the date and time variables and bring them to the datetime structure to make historical operations more comfortable. First, let’s combine date and time variables.
-
-Now let’s convert this date variable to datetime structure in pandas and add this variable to the data set.
-
-Let’s look at the structure of the variables in the data set.
-
-We can get what we want from the date and time of this variable. Let’s get to the months for example.
-
-Let’s examine the change in the arrest situation during the day. First, let’s print the arrest_made data on the screen.
-
-Let’s convert the object to boolean data structure.
-
-Let’s see the number of arrests.
-
-Let’s look at the percentage of arrests.
-
-About 1 percent were arrested. Now let’s see the average of arrests during the day.
-
-Let’s plot this data. To see the graph inline, it is necessary to use the % Matplotlib inline command.
-
-Let’s plot the graph.
-
-Let’s look at the work of the clocks in the data set.
-
-Let’s sort the data.
-
-Let’s plot the graph now.
-
-We can say that there are more stopping at ten o’clock in the morning.
-That’s it. I hope you enjoy this post. You can access the notebook I used for this post on our GitHub page. 🚩
-
+for episode in range(MAX_EPISODES):
+    
+    observation = env.reset()
+    cache = Cache()
+    
+    done = False
+    
+    for time_frame in range(MAX_TIME_FRAMES):
+        action = brain.decide_action(observation, episode)
+        cache.cache_data(observation, action, time_frame)
+        observation, _, done, _ = env.step(action)
+        if done:
+            print("Episode %d finished after %d timesteps" % (episode, time_frame+1))
+            break
+     
+    memory.add_cache(cache)
+    brain.train(episode)
+{% endhighlight %}
