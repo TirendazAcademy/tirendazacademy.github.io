@@ -1,18 +1,122 @@
----
-layout: default
----
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Home - Okan</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel = "icon" href =  "images/icon.jpg"
+        type = "image/x-icon">
+	</head>
+	<body class="is-preload">
 
-<div class="posts">
-  {% for post in site.posts %}
-    <article class="post">
+		<!-- Header -->
+			<section id="header">
+				<header>
+					<span class="image avatar"><img src="images/pp.jpeg" alt="" /></span>
+					<h1 id="logo"><a href="#">Okan Çiftçi</a></h1>
+					<p>Working on linked data, natural language processing, machine learning. Master student.</p>
+				</header>
+				<nav id="nav">
+					<ul>
+						<li><a href="#one" class="active">About</a></li>
+						<li><a href="#two">Things I Like To Do</a></li>
+						<li><a href="#three">A Few Things About Me</a></li>
+					</ul>
+				</nav>
+				<footer>
+					<ul class="icons">
+						<li><a href="https://twitter.com/Okanvk_CIFTCI" class="icon brands fa-twitter" target="_blank"><span class="label">Twitter</span></a></li>
+						<li><a href="https://www.linkedin.com/in/okanvk/" class="icon brands fa-linkedin" target="_blank"><span class="label">Facebook</span></a></li>
+						<li><a href="https://github.com/okanvk" class="icon brands fa-github" target="_blank"><span class="label" >Github</span></a></li>
+						<li><a href="mailto: okanvk.ciftci@gmail.com" class="icon solid fa-envelope" target="_blank"><span class="label" >Email</span></a></li>
+						<li><a href="https://open.spotify.com/user/11130168513?si=AK4gq8q8RnWFnd0Mza413g"  target="_blank" class="icon brands fa fa-spotify"><span class="label">Spotify</span></a></li>
+						<li><a href="https://medium.com/@okanifti"  target="_blank" class="icon brands fa fa-medium"><span class="label">Medium</span></a></li>
+					</ul>
+				</footer>
+			</section>
 
-      <h1><a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a></h1>
+		<!-- Wrapper -->
+			<div id="wrapper">
 
-      <div class="entry">
-        {{ post.excerpt }}
-      </div>
+				<!-- Main -->
+					<div id="main">
 
-      <a href="{{ site.baseurl }}{{ post.url }}" class="read-more">Read More</a>
-    </article>
-  {% endfor %}
-</div>
+						<!-- One -->
+							<section id="one">
+								<div class="image main" data-position="center">
+									<img src="images/banner2.png" alt="" />
+								</div>
+								<div class="container">
+									<header class="major">
+										<h3>About Me</h3>
+									</header>
+									<p>I'am a NLP Engineer based in Turkey. I currently work as NLP Engineer for Docu.ai.
+										I graduated from Aydın Adnan Menderes University with Bachelor's degree of Computer Engineering in June 2020.
+										I'm studying for my master's degree in IZTECH since September 2020. I'm currently working on Question Answering and Knowledge Graphs.
+										I'm skilled in both front-end and back-end development and natural language processing.
+										I share my projects about Natural Language Processing, Machine Learning, Linked Data in my github profile.
+										I write medium blogs about computer science.
+										Feel free to contact with me any platform.
+									</p>
+								</div>
+							</section>
+
+						<!-- Two -->
+							<section id="two">
+								<div class="container">
+									<h3>Things I Like To Do</h3>
+									<ul class="feature-icons">
+										<li class="icon solid fa-code">Writing code</li>
+										<li class="icon solid fa-film">Watching movies and talking about movies</li>
+										<li class="icon solid fa-book">Reading books and academic papers</li>
+										<li class="icon solid fa-coffee">Talking about computer science, sociology, philosophy</li>
+										<li class="icon solid fa-music">Listening music</li>
+										<li class="icon solid fa-users">Participating in computer science events.</li>
+									</ul>
+								</div>
+							</section>
+
+						<!-- Three -->
+							<section id="three">
+								<div class="container">
+									<h3>A Few Things About Me</h3>
+									<p>You can read my passions about my life down below</p>
+									<div class="features">
+										<article>
+											<a class="image"><img src="images/NLP-image.jpg" alt="" /></a>
+											<div class="inner">
+												<h4>Research topics on artificial intelligence and spring framework</h4>
+											</div>
+										</article>
+										<article>
+											<a href="#" class="image"><img src="images/course.jpeg" alt="" /></a>
+											<div class="inner">
+												<h4>To give courses like introduction to programming, web programming, natural language processing</h4>
+											</div>
+										</article>
+										<article>
+											<a href="#" class="image"><img src="images/bilmok.png" alt="" /></a>
+											<div class="inner">
+												<h4>Taking part on social communities and events such as IEEE, BİLMÖK</h4>
+											</div>
+										</article>
+									</div>
+								</div>
+							</section>
+					</div>
+
+			</div>
+
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
